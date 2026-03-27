@@ -1,15 +1,10 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { getTransactions } from '@/utils/storage'
 
 export const useFinanceStore = defineStore('finance', () => {
-  // 模拟数据 - 后续会替换为真实解析的数据
-  const transactions = ref([
-    { id: 1, date: '2026-03-26', amount: -50, category: '餐饮', description: '午餐' },
-    { id: 2, date: '2026-03-25', amount: -120, category: '交通', description: '打车' },
-    { id: 3, date: '2026-03-25', amount: 5000, category: '工资', description: '月薪' },
-    { id: 4, date: '2026-03-24', amount: -300, category: '购物', description: '衣服' },
-    { id: 5, date: '2026-03-23', amount: -80, category: '餐饮', description: '晚餐' },
-  ])
+  // 从 localStorage 加载真实数据，没有则为空数组
+  const transactions = ref(getTransactions() || [])
 
   // 计算收入
   const totalIncome = computed(() => {
@@ -42,11 +37,17 @@ export const useFinanceStore = defineStore('finance', () => {
     return categoryMap
   })
 
+  // 从 storage 刷新数据（页面跳转后调用）
+  function refresh() {
+    transactions.value = getTransactions() || []
+  }
+
   return {
     transactions,
     totalIncome,
     totalExpense,
     balance,
-    expensesByCategory
+    expensesByCategory,
+    refresh
   }
 })

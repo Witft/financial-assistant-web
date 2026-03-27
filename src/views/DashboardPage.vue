@@ -59,9 +59,15 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useFinanceStore } from '@/stores/finance'
 
 const financeStore = useFinanceStore()
+
+// 页面加载时从 storage 刷新最新数据
+onMounted(() => {
+  financeStore.refresh()
+})
 </script>
 
 <style scoped>
