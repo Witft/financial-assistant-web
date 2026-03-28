@@ -109,6 +109,7 @@ async function processFile(file) {
       router.push('/dashboard')
     }, 1000)
   } catch (error) {
+    console.error('解析错误:', error)
     status.value = { type: 'error', message: error.message }
   }
 }
@@ -121,35 +122,21 @@ function readFileAsText(file) {
     reader.onload = (e) => {
       const buffer = e.target.result
 
-      // 先尝试用 UTF-8 解码
-      let text = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
-
-      // 检查是否有乱码特征（有乱码说明是 GBK）
-      if (hasGarbledChars(text)) {
-        // GBK 解码
-        text = new TextDecoder('gbk').decode(buffer)
+      // 尝试用 UTF-8 解码，失败则用 GBK
+      try {
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+        console.log('UTF-8 解码成功')
+        resolve(text)
+      } catch {
+        console.log('UTF-8 解码失败，使用 GBK 解码')
+        const text = new TextDecoder('gbk').decode(buffer)
+        resolve(text)
       }
-
-      resolve(text)
     }
 
     reader.onerror = () => reject(new Error('文件读取失败'))
-    reader.readAsArrayBuffer(file)  // 读取为二进制
+    reader.readAsArrayBuffer(file)
   })
-}
-
-// 检测是否有乱码（简单检查）
-function hasGarbledChars(text) {
-  // 统计不可见字符的比例，如果过高说明是乱码
-  let invalidCount = 0
-  for (let i = 0; i < Math.min(text.length, 500); i++) {
-    const code = text.charCodeAt(i)
-    // UTF-8 中无效的字符范围
-    if (code === 0xFFFD || code < 32 && code !== 10 && code !== 13 && code !== 9) {
-      invalidCount++
-    }
-  }
-  return invalidCount / Math.min(text.length, 500) > 0.1
 }
 
 function goToDashboard() {

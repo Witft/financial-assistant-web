@@ -15,7 +15,22 @@ import { generateId } from './index'
  * @returns {Array} 交易数据
  */
 export function parseAlipay(csvText) {
-  const lines = csvText.trim().split('\n')
+  const allLines = csvText.split('\n')
+
+  // 找到真正的 CSV 表头（包含"交易时间"的行）
+  let headerIndex = -1
+  for (let i = 0; i < allLines.length; i++) {
+    if (allLines[i].includes('交易时间') && allLines[i].includes('交易对方')) {
+      headerIndex = i
+      break
+    }
+  }
+
+  if (headerIndex === -1) {
+    throw new Error('未找到有效的 CSV 表头')
+  }
+
+  const lines = allLines.slice(headerIndex)
   if (lines.length < 2) {
     throw new Error('文件内容为空或格式不正确')
   }
@@ -23,22 +38,23 @@ export function parseAlipay(csvText) {
   // 解析表头
   const header = parseCSVLine(lines[0])
   const columnMap = getAlipayColumnMap(header)
-  
+  console.log('支付宝表头:', header)
+
   // 解析数据行
   const transactions = []
-  
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim()
     if (!line) continue
-    
+
     const values = parseCSVLine(line)
     const transaction = parseAlipayRow(values, columnMap)
-    
+
     if (transaction) {
       transactions.push(transaction)
     }
   }
-  
+
   return transactions
 }
 
@@ -82,20 +98,21 @@ function getAlipayColumnMap(header) {
 function parseAlipayRow(values, columnMap) {
   try {
     // 获取各列数据
-    const dateStr = values[columnMap['交易创建时间']] || ''
+    const dateStr = values[columnMap['交易时间']] || values[columnMap['交易创建时间']] || ''
     const amountStr = values[columnMap['金额']] || '0'
-    const description = values[columnMap['商品说明']] || values[columnMap['备注']] || ''
+    const description = values[columnMap['商品说明']] || values[columnMap['交易对方']] || ''
     const type = values[columnMap['收/支']] || ''
-    const tradeType = values[columnMap['状态']] || values[columnMap['类型']] || ''
-    
+    const tradeType = values[columnMap['交易状态']] || values[columnMap['状态']] || ''
+    const categoryFromCSV = values[columnMap['交易分类']] || ''
+
     // 跳过无效行
     if (!dateStr || amountStr === '0' || amountStr === '-') {
       return null
     }
-    
+
     // 解析金额
     let amount = parseFloat(amountStr.replace(/,/g, ''))
-    
+
     // 判断类型：收入/支出/转账
     let transactionType = 'expense'
     if (type === '收入') {
@@ -107,9 +124,9 @@ function parseAlipayRow(values, columnMap) {
     
     // 解析日期
     const date = parseDate(dateStr)
-    
-    // 分类
-    const category = categorize(description, transactionType)
+
+    // 分类：优先使用 CSV 中的分类，没有则自动识别
+    const category = categoryFromCSV || categorize(description, transactionType)
     
     return {
       id: generateId(),
