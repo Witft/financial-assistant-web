@@ -4,7 +4,7 @@
       <h1 class="title">💰 财务助手</h1>
       <p class="subtitle">上传你的支付宝/微信账单，我来帮你分析</p>
 
-      <div 
+      <div
         class="drop-zone"
         :class="{ 'drag-over': isDragOver }"
         @dragover.prevent="handleDragOver"
@@ -12,14 +12,14 @@
         @drop.prevent="handleDrop"
         @click="triggerFileInput"
       >
-        <input 
+        <input
           ref="fileInput"
-          type="file" 
+          type="file"
           accept=".csv,.txt"
           @change="handleFileSelect"
           style="display: none"
         />
-        
+
         <div class="drop-zone-content">
           <span class="icon">📁</span>
           <p class="text">拖拽 CSV 文件到这里</p>
@@ -96,14 +96,14 @@ function handleFileSelect(event) {
 // 处理文件
 async function processFile(file) {
   status.value = { type: 'loading', message: '正在解析文件...' }
-  
+
   try {
     const text = await readFileAsText(file)
     const transactions = parseTransactions(text, file.name)
-    
+
     saveTransactions(transactions)
     status.value = { type: 'success', message: `成功解析 ${transactions.length} 条记录！` }
-    
+
     // 延迟跳转，让用户看到成功提示
     setTimeout(() => {
       router.push('/dashboard')
@@ -113,14 +113,43 @@ async function processFile(file) {
   }
 }
 
-// 读取文件内容
+// 读取文件内容（自动检测编码）
 function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
+
+    reader.onload = (e) => {
+      const buffer = e.target.result
+
+      // 先尝试用 UTF-8 解码
+      let text = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+
+      // 检查是否有乱码特征（有乱码说明是 GBK）
+      if (hasGarbledChars(text)) {
+        // GBK 解码
+        text = new TextDecoder('gbk').decode(buffer)
+      }
+
+      resolve(text)
+    }
+
     reader.onerror = () => reject(new Error('文件读取失败'))
-    reader.readAsText(file)
+    reader.readAsArrayBuffer(file)  // 读取为二进制
   })
+}
+
+// 检测是否有乱码（简单检查）
+function hasGarbledChars(text) {
+  // 统计不可见字符的比例，如果过高说明是乱码
+  let invalidCount = 0
+  for (let i = 0; i < Math.min(text.length, 500); i++) {
+    const code = text.charCodeAt(i)
+    // UTF-8 中无效的字符范围
+    if (code === 0xFFFD || code < 32 && code !== 10 && code !== 13 && code !== 9) {
+      invalidCount++
+    }
+  }
+  return invalidCount / Math.min(text.length, 500) > 0.1
 }
 
 function goToDashboard() {
