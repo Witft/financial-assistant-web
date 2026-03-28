@@ -15,20 +15,20 @@
         <input
           ref="fileInput"
           type="file"
-          accept=".csv,.txt"
+          accept=".csv,.txt,.xlsx,.xls"
           @change="handleFileSelect"
           style="display: none"
         />
 
         <div class="drop-zone-content">
           <span class="icon">📁</span>
-          <p class="text">拖拽 CSV 文件到这里</p>
+          <p class="text">拖拽 CSV/Excel 文件到这里</p>
           <p class="sub-text">或点击选择文件</p>
         </div>
       </div>
 
       <div class="supported-files">
-        <p>支持：支付宝 CSV / 微信 CSV</p>
+        <p>支持：支付宝 CSV / 微信 Excel(.xlsx)</p>
       </div>
 
       <div v-if="hasExistingData" class="existing-data">
@@ -49,6 +49,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import * as XLSX from 'xlsx'
 import { parseTransactions } from '@/utils/parsers'
 import { saveTransactions, getTransactions } from '@/utils/storage'
 
@@ -98,8 +99,16 @@ async function processFile(file) {
   status.value = { type: 'loading', message: '正在解析文件...' }
 
   try {
-    const text = await readFileAsText(file)
-    const transactions = parseTransactions(text, file.name)
+    let transactions
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      // Excel 文件
+      transactions = await parseExcelFile(file)
+    } else {
+      // CSV 文件
+      const text = await readFileAsText(file)
+      transactions = parseTransactions(text, file.name)
+    }
 
     saveTransactions(transactions)
     status.value = { type: 'success', message: `成功解析 ${transactions.length} 条记录！` }
@@ -112,6 +121,43 @@ async function processFile(file) {
     console.error('解析错误:', error)
     status.value = { type: 'error', message: error.message }
   }
+}
+
+// 解析 Excel 文件
+async function parseExcelFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result)
+        const workbook = XLSX.read(data, { type: 'array' })
+
+        // 获取第一个工作表
+        const firstSheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[firstSheetName]
+
+        // 转换为 JSON 数组（包含表头）
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+
+        if (jsonData.length < 2) {
+          reject(new Error('文件内容为空或格式不正确'))
+          return
+        }
+
+        // 转换为 CSV 格式字符串，交给 parseTransactions 处理
+        const csvText = XLSX.utils.sheet_to_csv(worksheet)
+        const transactions = parseTransactions(csvText, file.name)
+
+        resolve(transactions)
+      } catch (err) {
+        reject(new Error('Excel 文件解析失败: ' + err.message))
+      }
+    }
+
+    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.readAsArrayBuffer(file)
+  })
 }
 
 // 读取文件内容（自动检测编码）

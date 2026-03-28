@@ -15,15 +15,32 @@ import { generateId } from './index'
  * @returns {Array} 交易数据
  */
 export function parseWechat(csvText) {
-  const lines = csvText.trim().split('\n')
+  const allLines = csvText.split('\n')
+
+  // 找到真正的 CSV 表头（包含"交易时间"的行）
+  let headerIndex = -1
+  for (let i = 0; i < allLines.length; i++) {
+    if (allLines[i].includes('交易时间') && allLines[i].includes('交易类型')) {
+      headerIndex = i
+      break
+    }
+  }
+
+  if (headerIndex === -1) {
+    throw new Error('未找到有效的 CSV 表头')
+  }
+
+  const lines = allLines.slice(headerIndex)
   if (lines.length < 2) {
     throw new Error('文件内容为空或格式不正确')
   }
 
+  console.log('微信表头行:', lines[0])
+
   // 解析表头
   const header = parseCSVLine(lines[0])
   const columnMap = getWechatColumnMap(header)
-  
+
   // 解析数据行
   const transactions = []
   
