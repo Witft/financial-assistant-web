@@ -53,6 +53,7 @@
 
       <div class="nav">
         <router-link to="/" class="btn">← 返回上传</router-link>
+        <button class="btn btn-danger" @click="handleClear">🗑️ 清空数据</button>
       </div>
     </div>
   </div>
@@ -61,13 +62,23 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useFinanceStore } from '@/stores/finance'
+import { useRouter } from 'vue-router'
 
 const financeStore = useFinanceStore()
+const router = useRouter()
 
 // 页面加载时从 storage 刷新最新数据
 onMounted(() => {
   financeStore.refresh()
 })
+
+// 清空数据
+function handleClear() {
+  if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+    financeStore.clear()
+    router.push('/')
+  }
+}
 </script>
 
 <style scoped>
@@ -201,10 +212,22 @@ h1 {
   text-decoration: none;
   border-radius: 8px;
   margin-top: 1rem;
+  margin-right: 1rem;
   transition: background 0.2s;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
 }
 
 .btn:hover {
   background: #5a6fd6;
+}
+
+.btn-danger {
+  background: #ff4d4f;
+}
+
+.btn-danger:hover {
+  background: #ff7875;
 }
 </style>
