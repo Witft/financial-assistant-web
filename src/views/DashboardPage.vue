@@ -2,7 +2,7 @@
   <div class="dashboard">
     <div class="container">
       <h1>📊 财务 Dashboard</h1>
-      
+
       <!-- 顶部统计卡片 -->
       <div class="summary-cards">
         <div class="card income">
@@ -23,8 +23,8 @@
       <div class="section">
         <h2>📈 支出分类</h2>
         <div class="category-list">
-          <div 
-            v-for="(amount, category) in financeStore.expensesByCategory" 
+          <div
+            v-for="(amount, category) in financeStore.expensesByCategory"
             :key="category"
             class="category-item"
           >
@@ -37,9 +37,15 @@
       <!-- 近期交易 -->
       <div class="section">
         <h2>📝 近期交易</h2>
+        <select v-model="financeStore.selectedMonth">
+          <option value="">全部</option>
+          <option v-for="month in monthOptions" :key="month" :value="month">
+            {{ month }}
+          </option>
+        </select>
         <div class="transaction-list">
-          <div 
-            v-for="t in financeStore.transactions" 
+          <div
+            v-for="t in financeStore.filteredTransactions"
             :key="t.id"
             class="transaction-item"
             :class="{ income: t.amount > 0, expense: t.amount < 0 }"
@@ -60,12 +66,24 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useFinanceStore } from '@/stores/finance'
 import { useRouter } from 'vue-router'
 
 const financeStore = useFinanceStore()
 const router = useRouter()
+
+// 动态生成月份选项（过去12个月）
+const monthOptions = computed(() => {
+  const months = []
+  const now = new Date()
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    months.push(month)
+  }
+  return months
+})
 
 // 页面加载时从 storage 刷新最新数据
 onMounted(() => {
@@ -110,16 +128,24 @@ h1 {
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.card.income .value { color: #52c41a; }
-.card.expense .value { color: #ff4d4f; }
-.card.balance .value { color: #1890ff; }
-.card.balance.negative .value { color: #ff4d4f; }
+.card.income .value {
+  color: #52c41a;
+}
+.card.expense .value {
+  color: #ff4d4f;
+}
+.card.balance .value {
+  color: #1890ff;
+}
+.card.balance.negative .value {
+  color: #ff4d4f;
+}
 
 .card .label {
   font-size: 0.9rem;
@@ -136,7 +162,7 @@ h1 {
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 1.5rem;
 }
 
@@ -187,8 +213,12 @@ h1 {
   align-items: center;
 }
 
-.transaction-item.income .t-amount { color: #52c41a; }
-.transaction-item.expense .t-amount { color: #ff4d4f; }
+.transaction-item.income .t-amount {
+  color: #52c41a;
+}
+.transaction-item.expense .t-amount {
+  color: #ff4d4f;
+}
 
 .t-date {
   color: #999;

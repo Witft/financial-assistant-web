@@ -6,6 +6,13 @@ export const useFinanceStore = defineStore('finance', () => {
   // 从 localStorage 加载真实数据，没有则为空数组
   const transactions = ref(getTransactions() || [])
 
+  const selectedMonth = ref('')
+
+  const filteredTransactions = computed(() => {
+    if (!selectedMonth.value) return transactions.value;
+    return transactions.value.filter(t => t.date.startsWith(selectedMonth.value))
+  })
+
   // 计算收入
   const totalIncome = computed(() => {
     return transactions.value
@@ -50,6 +57,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   return {
     transactions,
+    selectedMonth,
+    filteredTransactions,
     totalIncome,
     totalExpense,
     balance,
