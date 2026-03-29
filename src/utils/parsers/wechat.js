@@ -113,13 +113,19 @@ function parseWechatRow(values, columnMap) {
     // 解析金额（微信金额全是负号）
     let amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')))
     
-    // 判断类型：收入/支出/转账
+    // 判断类型：优先信任"收/支"列，其次根据交易类型判断
     let transactionType = 'expense'
-    if (payType === '收入' || tradeType.includes('收款') || tradeType.includes('红包')) {
+    if (payType === '支出') {
+      transactionType = 'expense'
+    } else if (payType === '收入') {
       transactionType = 'income'
     } else if (tradeType.includes('转账') || payType === '转账') {
       transactionType = 'transfer'
+    } else if (tradeType.includes('红包')) {
+      // 红包：发送是支出，接收是收入
+      transactionType = 'expense'
     }
+    // payType 为空时，根据 tradeType 推断
     
     // 支出金额应该是负数
     if (transactionType === 'expense') {
