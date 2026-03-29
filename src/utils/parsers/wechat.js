@@ -1,6 +1,6 @@
 /**
  * 微信账单解析器
- * 
+ *
  * 微信 CSV 格式特点：
  * - 编码：UTF-8
  * - 列名：交易时间, 交易类型, 交易对方, 商品, 金额(元), 收/支 等
@@ -43,19 +43,19 @@ export function parseWechat(csvText) {
 
   // 解析数据行
   const transactions = []
-  
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim()
     if (!line) continue
-    
+
     const values = parseCSVLine(line)
     const transaction = parseWechatRow(values, columnMap)
-    
+
     if (transaction) {
       transactions.push(transaction)
     }
   }
-  
+
   return transactions
 }
 
@@ -66,7 +66,7 @@ function parseCSVLine(line) {
   const result = []
   let current = ''
   let inQuotes = false
-  
+
   for (let char of line) {
     if (char === '"') {
       inQuotes = !inQuotes
@@ -78,7 +78,7 @@ function parseCSVLine(line) {
     }
   }
   result.push(current.trim())
-  
+
   return result
 }
 
@@ -104,15 +104,15 @@ function parseWechatRow(values, columnMap) {
     const description = values[columnMap['商品']] || values[columnMap['交易对方']] || ''
     const tradeType = values[columnMap['交易类型']] || ''
     const payType = values[columnMap['收/支']] || ''
-    
+
     // 跳过无效行
     if (!dateStr || amountStr === '0' || amountStr === '-') {
       return null
     }
-    
+
     // 解析金额（微信金额全是负号）
     let amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')))
-    
+
     // 判断类型：优先信任"收/支"列，其次根据交易类型判断
     let transactionType = 'expense'
     if (payType === '支出') {
@@ -126,18 +126,18 @@ function parseWechatRow(values, columnMap) {
       transactionType = 'expense'
     }
     // payType 为空时，根据 tradeType 推断
-    
+
     // 支出金额应该是负数
     if (transactionType === 'expense') {
       amount = -amount
     }
-    
+
     // 解析日期
     const date = parseDate(dateStr)
-    
+
     // 分类
     const category = categorize(description, tradeType, transactionType)
-    
+
     return {
       id: generateId(),
       date,
@@ -163,13 +163,13 @@ function parseDate(dateStr) {
     const date = new Date((excelDate - 25569) * 86400 * 1000)
     return date.toISOString().split('T')[0]
   }
-  
+
   // 正常日期格式
   const match = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
   if (match) {
     return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
   }
-  
+
   return new Date().toISOString().split('T')[0]
 }
 
@@ -179,10 +179,10 @@ function parseDate(dateStr) {
 function categorize(description, tradeType, type) {
   if (type === 'transfer') return '转账'
   if (type === 'income') return '收入'
-  
+
   const desc = (description + tradeType).toLowerCase()
-  
-  if (desc.includes('餐饮') || desc.includes('吃饭') || desc.includes('外卖') || desc.includes('超市') || desc.includes('便利店')) {
+
+  if (desc.includes('餐饮') || desc.includes('吃饭') || desc.includes('外卖') || desc.includes('超市') || desc.includes('便利店') || desc.includes('美团')) {
     return '餐饮'
   }
   if (desc.includes('交通') || desc.includes('打车') || desc.includes('滴滴') || desc.includes('地铁') || desc.includes('公交') || desc.includes('停车')) {
@@ -206,6 +206,6 @@ function categorize(description, tradeType, type) {
   if (desc.includes('红包')) {
     return '人情'
   }
-  
+
   return '其他'
 }
