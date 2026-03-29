@@ -15,14 +15,14 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // 计算收入
   const totalIncome = computed(() => {
-    return transactions.value
+    return filteredTransactions.value
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0)
   })
 
   // 计算支出
   const totalExpense = computed(() => {
-    return transactions.value
+    return filteredTransactions.value
       .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   })
