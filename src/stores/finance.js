@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { getTransactions } from '@/utils/storage'
+import { getTransactions, clearTransactions } from '@/utils/storage'
 
 export const useFinanceStore = defineStore('finance', () => {
   // 从 localStorage 加载真实数据，没有则为空数组
@@ -42,12 +42,19 @@ export const useFinanceStore = defineStore('finance', () => {
     transactions.value = getTransactions() || []
   }
 
+  // 清空所有数据
+  function clear() {
+    clearTransactions()
+    transactions.value = []
+  }
+
   return {
     transactions,
     totalIncome,
     totalExpense,
     balance,
     expensesByCategory,
-    refresh
+    refresh,
+    clear
   }
 })
