@@ -19,17 +19,24 @@
         </div>
       </div>
 
-      <!-- 分类统计 -->
+      <!-- 分类统计 + 饼图 -->
       <div class="section">
-        <h2>📈 支出分类</h2>
-        <div class="category-list">
-          <div
-            v-for="(amount, category) in financeStore.expensesByCategory"
-            :key="category"
-            class="category-item"
-          >
-            <span class="category-name">{{ category }}</span>
-            <span class="category-amount">¥{{ amount.toLocaleString() }}</span>
+        <h2>📈 支出构成</h2>
+        <div class="chart-area">
+          <div class="chart-wrapper">
+            <v-chart :option="pieOption" autoresize style="height: 320px" />
+          </div>
+          <div class="category-list">
+            <div
+              v-for="item in financeStore.filteredExpensesByCategory"
+              :key="item.name"
+              class="category-item"
+            >
+              <span class="category-dot" :style="{ background: item.color }"></span>
+              <span class="category-name">{{ item.name }}</span>
+              <span class="category-amount">¥{{ item.value.toLocaleString() }}</span>
+              <span class="category-pct">{{ item.pct }}%</span>
+            </div>
           </div>
         </div>
       </div>
@@ -37,12 +44,14 @@
       <!-- 近期交易 -->
       <div class="section">
         <h2>📝 近期交易</h2>
-        <select v-model="financeStore.selectedMonth">
-          <option value="">全部</option>
-          <option v-for="month in monthOptions" :key="month" :value="month">
-            {{ month }}
-          </option>
-        </select>
+        <div class="filter-row">
+          <select v-model="financeStore.selectedMonth">
+            <option value="">全部月份</option>
+            <option v-for="month in monthOptions" :key="month" :value="month">
+              {{ month }}
+            </option>
+          </select>
+        </div>
         <div class="transaction-list">
           <div
             v-for="t in financeStore.filteredTransactions"
@@ -83,6 +92,56 @@ const monthOptions = computed(() => {
     months.push(month)
   }
   return months
+})
+
+// 饼图配色
+const COLORS = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+  '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
+  '#BB8FCE', '#85C1E9', '#F8B500', '#6BCB77'
+]
+
+// 饼图配置（基于筛选后的月份数据）
+const pieOption = computed(() => {
+  const data = financeStore.filteredExpensesByCategory
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: ¥{c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+      textStyle: { color: '#666', fontSize: 12 }
+    },
+    color: COLORS,
+    series: [
+      {
+        name: '支出构成',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 6,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold'
+          }
+        },
+        data: data.map((d, i) => ({ ...d, itemStyle: { color: COLORS[i % COLORS.length] } }))
+      }
+    ]
+  }
 })
 
 // 页面加载时从 storage 刷新最新数据
@@ -134,18 +193,10 @@ h1 {
   gap: 0.5rem;
 }
 
-.card.income .value {
-  color: #52c41a;
-}
-.card.expense .value {
-  color: #ff4d4f;
-}
-.card.balance .value {
-  color: #1890ff;
-}
-.card.balance.negative .value {
-  color: #ff4d4f;
-}
+.card.income .value { color: #52c41a; }
+.card.expense .value { color: #ff4d4f; }
+.card.balance .value { color: #1890ff; }
+.card.balance.negative .value { color: #ff4d4f; }
 
 .card .label {
   font-size: 0.9rem;
@@ -172,28 +223,76 @@ h1 {
   color: #333;
 }
 
+/* 图表区域 */
+.chart-area {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.chart-wrapper {
+  flex: 0 0 320px;
+  height: 320px;
+}
+
 /* 分类列表 */
 .category-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .category-item {
   display: flex;
-  justify-content: space-between;
-  padding: 0.75rem;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
   background: #fafafa;
   border-radius: 8px;
 }
 
+.category-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .category-name {
+  flex: 1;
   color: #333;
+  font-size: 0.9rem;
 }
 
 .category-amount {
   font-weight: bold;
   color: #ff4d4f;
+  font-size: 0.9rem;
+}
+
+.category-pct {
+  color: #999;
+  font-size: 0.8rem;
+  width: 40px;
+  text-align: right;
+}
+
+/* 筛选行 */
+.filter-row {
+  margin-bottom: 1rem;
+}
+
+.filter-row select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #333;
+  background: white;
+  cursor: pointer;
 }
 
 /* 交易列表 */
@@ -201,6 +300,8 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .transaction-item {
@@ -213,25 +314,12 @@ h1 {
   align-items: center;
 }
 
-.transaction-item.income .t-amount {
-  color: #52c41a;
-}
-.transaction-item.expense .t-amount {
-  color: #ff4d4f;
-}
+.transaction-item.income .t-amount { color: #52c41a; }
+.transaction-item.expense .t-amount { color: #ff4d4f; }
 
-.t-date {
-  color: #999;
-  font-size: 0.9rem;
-}
-
-.t-desc {
-  color: #333;
-}
-
-.t-amount {
-  font-weight: bold;
-}
+.t-date { color: #999; font-size: 0.9rem; }
+.t-desc { color: #333; }
+.t-amount { font-weight: bold; }
 
 /* 按钮 */
 .btn {
@@ -249,15 +337,7 @@ h1 {
   font-size: 1rem;
 }
 
-.btn:hover {
-  background: #5a6fd6;
-}
-
-.btn-danger {
-  background: #ff4d4f;
-}
-
-.btn-danger:hover {
-  background: #ff7875;
-}
+.btn:hover { background: #5a6fd6; }
+.btn-danger { background: #ff4d4f; }
+.btn-danger:hover { background: #ff7875; }
 </style>

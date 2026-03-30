@@ -3,48 +3,53 @@ import { defineStore } from 'pinia'
 import { getTransactions, clearTransactions } from '@/utils/storage'
 
 export const useFinanceStore = defineStore('finance', () => {
-  // 从 localStorage 加载真实数据，没有则为空数组
   const transactions = ref(getTransactions() || [])
-
   const selectedMonth = ref('')
 
+  // 筛选后的交易
   const filteredTransactions = computed(() => {
-    if (!selectedMonth.value) return transactions.value;
+    if (!selectedMonth.value) return transactions.value
     return transactions.value.filter(t => t.date.startsWith(selectedMonth.value))
   })
 
   // 计算收入
-  const totalIncome = computed(() => {
-    return filteredTransactions.value
+  const totalIncome = computed(() =>
+    filteredTransactions.value
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0)
-  })
+  )
 
   // 计算支出
-  const totalExpense = computed(() => {
-    return filteredTransactions.value
+  const totalExpense = computed(() =>
+    filteredTransactions.value
       .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0)
-  })
+  )
 
   // 计算结余
   const balance = computed(() => totalIncome.value - totalExpense.value)
 
-  // 按分类统计支出
-  const expensesByCategory = computed(() => {
-    const categoryMap = {}
-    transactions.value
+  // 按分类统计支出（含百分比，用于饼图和列表）
+  const filteredExpensesByCategory = computed(() => {
+    const map = {}
+    filteredTransactions.value
       .filter(t => t.amount < 0)
       .forEach(t => {
-        if (!categoryMap[t.category]) {
-          categoryMap[t.category] = 0
-        }
-        categoryMap[t.category] += Math.abs(t.amount)
+        if (!map[t.category]) map[t.category] = 0
+        map[t.category] += Math.abs(t.amount)
       })
-    return categoryMap
+
+    const total = Object.values(map).reduce((s, v) => s + v, 0)
+    return Object.entries(map)
+      .map(([name, value]) => ({
+        name,
+        value,
+        pct: total > 0 ? Math.round((value / total) * 100) : 0
+      }))
+      .sort((a, b) => b.value - a.value)
   })
 
-  // 从 storage 刷新数据（页面跳转后调用）
+  // 从 storage 刷新数据
   function refresh() {
     transactions.value = getTransactions() || []
   }
@@ -62,7 +67,7 @@ export const useFinanceStore = defineStore('finance', () => {
     totalIncome,
     totalExpense,
     balance,
-    expensesByCategory,
+    filteredExpensesByCategory,
     refresh,
     clear
   }
