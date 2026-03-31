@@ -40,10 +40,16 @@ export const useFinanceStore = defineStore('finance', () => {
       })
 
     const total = Object.values(map).reduce((s, v) => s + v, 0)
+    const COLORS = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+      '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
+      '#BB8FCE', '#85C1E9', '#F8B500', '#6BCB77'
+    ]
     return Object.entries(map)
-      .map(([name, value]) => ({
+      .map(([name, value], index) => ({
         name,
         value,
+        color: COLORS[index % COLORS.length],
         pct: total > 0 ? Math.round((value / total) * 100) : 0
       }))
       .sort((a, b) => b.value - a.value)
