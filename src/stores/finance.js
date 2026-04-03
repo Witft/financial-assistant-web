@@ -55,6 +55,42 @@ export const useFinanceStore = defineStore('finance', () => {
       .sort((a, b) => b.value - a.value)
   })
 
+  // 组装用于 AI 诊断的"脱水"核心数据
+  const aiPromptData = computed(() => {
+    // 1. 获取前三名最大单笔支出
+    const topExpenses = [...filteredTransactions.value]
+      .filter(t => t.amount < 0)
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+      .slice(0, 3)
+      .map(t => ({
+        date: t.date,
+        category: t.category,
+        amount: Math.abs(t.amount).toFixed(2),
+        desc: t.description || t.counterparty || t.item || '无明细'
+      }))
+
+    // 2. 获取前三名支出分类
+    const topCategories = filteredExpensesByCategory.value
+      .slice(0, 3)
+      .map(c => ({
+        name: c.name,
+        amount: c.value.toFixed(2),
+        pct: `${c.pct}%`
+      }))
+
+    // 3. 组装精简版 JSON
+    return {
+      month: selectedMonth.value || '全部历史',
+      summary: {
+        income: totalIncome.value.toFixed(2),
+        expense: totalExpense.value.toFixed(2),
+        balance: balance.value.toFixed(2)
+      },
+      top_categories: topCategories,
+      top_expenses: topExpenses
+    }
+  })
+
   // 从 storage 刷新数据
   function refresh() {
     transactions.value = getTransactions() || []
@@ -74,6 +110,7 @@ export const useFinanceStore = defineStore('finance', () => {
     totalExpense,
     balance,
     filteredExpensesByCategory,
+    aiPromptData,
     refresh,
     clear
   }
