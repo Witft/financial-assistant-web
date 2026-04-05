@@ -38,3 +38,38 @@ export async function fetchAiDiagnosis(promptData) {
     throw error
   }
 }
+
+/**
+ * 请求 AI 批量分类（Layer 2）
+ * @param {string[]} descriptions - 商户描述列表（去重后）
+ * @returns {Promise<Object>} - 返回映射 { "商户名": "分类", ... }
+ */
+export async function fetchAiCategories(descriptions) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categorize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        descriptions
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`AI 分类请求错误: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    
+    if (data.success && data.mapping) {
+      return data.mapping
+    } else {
+      throw new Error(data.detail || "AI 分类返回格式错误")
+    }
+
+  } catch (error) {
+    console.error("AI 分类接口调用失败:", error)
+    throw error
+  }
+}
