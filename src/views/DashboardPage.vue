@@ -4,7 +4,7 @@
       <h1>📊 财务 Dashboard</h1>
 
       <!-- 顶部统计卡片 -->
-      <SummaryCards 
+      <SummaryCards
         :total-income="financeStore.totalIncome"
         :total-expense="financeStore.totalExpense"
         :balance="financeStore.balance"
@@ -53,6 +53,7 @@
 import { ref, onMounted } from 'vue'
 import { useFinanceStore } from '@/stores/finance'
 import { useRouter } from 'vue-router'
+import { fetchAiDiagnosis } from '@/utils/api'
 
 // 组件导入
 import SummaryCards from '@/components/SummaryCards.vue'
@@ -70,27 +71,14 @@ const aiResult = ref('')
 
 async function handleGetAiDiagnosis() {
   if (isAiLoading.value) return // 防抖，防止重复点击
-  
+
   isAiLoading.value = true
   aiResult.value = '' // 清空旧数据
-  
+
   try {
     // 【Mock 数据】因为 Python 后端还没起，先用 setTimeout 假装发请求
     // 以后这里会换成： aiResult.value = await fetchAiDiagnosis(financeStore.aiPromptData)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 返回假的 HTML 内容模拟 Markdown 解析后的结果
-    aiResult.value = `
-      <h3 style="margin-top:0;">🤖 你的本月财务诊断报告出炉啦：</h3>
-      <p>💡 <b>总体评价</b>：你这个月的收支比较健康，结余良好！</p>
-      <ul>
-        <li>📉 <b>可优化项</b>：餐饮支出占总支出的 35%，略高于你的历史平均水平。建议周末可以尝试自己做饭哦。</li>
-        <li>📈 <b>亮点</b>：没有大额冲动消费，储蓄率达到了 40%！继续保持。</li>
-      </ul>
-      <p style="color: #718096; font-size: 0.9em;">
-        <i>（* 注：目前是假数据占位。等我们用 Python 接入 Gemini 2.5 后，这里就会显示真实的 AI 分析啦~）</i>
-      </p>
-    `
+    aiResult.value = await fetchAiDiagnosis(financeStore.aiPromptData)
   } catch (err) {
     aiResult.value = `<p style="color: red;">获取诊断失败: ${err.message}</p>`
   } finally {
