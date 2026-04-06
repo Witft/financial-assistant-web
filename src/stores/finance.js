@@ -13,17 +13,17 @@ export const useFinanceStore = defineStore('finance', () => {
     return transactions.value.filter(t => t.date.startsWith(selectedMonth.value))
   })
 
-  // 计算收入
+  // 计算收入（只计算 type === 'income' 的记录）
   const totalIncome = computed(() =>
     filteredTransactions.value
-      .filter(t => t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0)
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   )
 
-  // 计算支出
+  // 计算支出（只计算 type === 'expense' 的记录）
   const totalExpense = computed(() =>
     filteredTransactions.value
-      .filter(t => t.amount < 0)
+      .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   )
 

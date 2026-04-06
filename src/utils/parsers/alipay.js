@@ -1,6 +1,6 @@
 /**
  * 支付宝账单解析器
- * 
+ *
  * 支付宝 CSV 格式特点：
  * - 编码：GBK
  * - 列名：交易号, 交易创建时间, 商品说明, 金额, 收/支, 类型 等
@@ -65,7 +65,7 @@ function parseCSVLine(line) {
   const result = []
   let current = ''
   let inQuotes = false
-  
+
   for (let char of line) {
     if (char === '"') {
       inQuotes = !inQuotes
@@ -77,7 +77,7 @@ function parseCSVLine(line) {
     }
   }
   result.push(current.trim())
-  
+
   return result
 }
 
@@ -114,20 +114,22 @@ function parseAlipayRow(values, columnMap) {
     let amount = parseFloat(amountStr.replace(/,/g, ''))
 
     // 判断类型：收入/支出/转账
-    let transactionType = 'expense'
+    let transactionType = 'transfer'
     if (type === '收入') {
       transactionType = 'income'
       amount = Math.abs(amount)
+    } else if (type === '支出') {
+      transactionType = 'expense'
     } else if (tradeType.includes('转账') || type === '转账') {
       transactionType = 'transfer'
     }
-    
+
     // 解析日期
     const date = parseDate(dateStr)
 
     // 分类：优先使用 CSV 中的分类，没有则自动识别
     const category = categoryFromCSV || categorize(description, transactionType)
-    
+
     return {
       id: generateId(),
       date,
@@ -154,13 +156,13 @@ function parseDate(dateStr) {
     const date = new Date((excelDate - 25569) * 86400 * 1000)
     return date.toISOString().split('T')[0]
   }
-  
+
   // 正常日期格式
   const match = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
   if (match) {
     return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
   }
-  
+
   return new Date().toISOString().split('T')[0]
 }
 
@@ -170,9 +172,9 @@ function parseDate(dateStr) {
 function categorize(description, type) {
   if (type === 'transfer') return '转账'
   if (type === 'income') return '收入'
-  
+
   const desc = description.toLowerCase()
-  
+
   if (desc.includes('餐饮') || desc.includes('吃饭') || desc.includes('外卖') || desc.includes('超市')) {
     return '餐饮'
   }
@@ -194,6 +196,6 @@ function categorize(description, type) {
   if (desc.includes('医疗') || desc.includes('药店') || desc.includes('保险')) {
     return '医疗'
   }
-  
+
   return '其他'
 }

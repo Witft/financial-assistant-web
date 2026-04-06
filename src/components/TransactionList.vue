@@ -4,11 +4,11 @@
       v-for="t in transactions"
       :key="t.id"
       class="transaction-item"
-      :class="{ income: t.amount > 0, expense: t.amount < 0 }"
+      :class="{ income: t.type === 'income', expense: t.type === 'expense' }"
     >
       <span class="t-date">{{ t.date }}</span>
       <span class="t-desc">{{ t.description }}</span>
-      <span class="t-amount">{{ t.amount > 0 ? '+' : '' }}¥{{ t.amount }}</span>
+      <span class="t-amount">{{ t.type === 'income' ? '+' : '' }}¥{{ Math.abs(t.amount) }}</span>
     </div>
   </div>
 </template>
