@@ -1,12 +1,13 @@
 export type TransactionType = 'expense' | 'income' | 'transfer';
+export type SourceType = 'wechat' | 'alipay' | 'other';
 
 export interface Transaction {
-  id: String;
+  id: string;
   date: string;
   amount: number;
   category: string;
-  description: string;
-  source: string;
+  description?: string;
+  source: SourceType;
   type: TransactionType;
 }
 
