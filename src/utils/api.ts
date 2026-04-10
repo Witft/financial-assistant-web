@@ -31,9 +31,7 @@ export async function fetchAiDiagnosis(promptData: any): Promise<AiDiagnosisResu
     // 3. 解析 JSON 响应
     const data = (await response.json()) as AiDiagnosisResult
 
-    // 4. 提取后端返回的分析文本 (假设后端返回结构为 { success: true, result: "markdown文本..." })
-    // 具体字段名 (result/data/content) 根据你 FastAPI 的返回结构调整
-    return data.result || data.data || data.content || "🤖 未能解析大模型的回复，请检查后端返回格式。"
+    return data
 
   } catch (error) {
     console.error("AI 分析接口调用失败:", error)
