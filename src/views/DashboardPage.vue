@@ -78,7 +78,8 @@ async function handleGetAiDiagnosis() {
   try {
     // 【Mock 数据】因为 Python 后端还没起，先用 setTimeout 假装发请求
     // 以后这里会换成： aiResult.value = await fetchAiDiagnosis(financeStore.aiPromptData)
-    aiResult.value = await fetchAiDiagnosis(financeStore.aiPromptData)
+    const res = await fetchAiDiagnosis(financeStore.aiPromptData)
+    aiResult.value = res.result
   } catch (err) {
     aiResult.value = `<p style="color: red;">获取诊断失败: ${err.message}</p>`
   } finally {

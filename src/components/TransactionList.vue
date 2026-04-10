@@ -13,13 +13,12 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  transactions: {
-    type: Array,
-    required: true
-  }
-})
+<script setup lang="ts">
+import type { Transaction } from '@/types/finance'
+
+defineProps<{
+  transactions: Transaction[]
+}>()
 </script>
 
 <style scoped>
