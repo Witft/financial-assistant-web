@@ -68,7 +68,7 @@ export const useFinanceStore = defineStore('finance', () => {
         date: t.date,
         category: t.category,
         amount: Math.abs(t.amount).toFixed(2),
-        desc: t.description || t.counterparty || t.item || '无明细'
+        desc: t.description || '无明细'
       }))
 
     // 2. 获取前三名支出分类
@@ -126,13 +126,13 @@ export const useFinanceStore = defineStore('finance', () => {
     console.log(`🔍 发现 ${uncategorized.length} 条"其他"交易，尝试分类...`)
 
     // 2. 从缓存中查找（Layer 3）
-    const cache = getCategoryCache()
+    const cache = getCategoryCache() as Record<string, string>
     const mapping: Record<string, string> = {}
     const toAiList: string[] = []
 
     for (const t of uncategorized) {
       // 优先用 description，其次用 counterparty
-      const key = t.description || t.counterparty || ''
+      const key = t.description || ''
       if (key && cache[key]) {
         mapping[key] = cache[key] // 命中缓存
       } else if (key) {
@@ -167,7 +167,7 @@ export const useFinanceStore = defineStore('finance', () => {
     let updatedCount = 0
     transactions.value = transactions.value.map(t => {
       if (t.category === '其他' && t.type === 'expense') {
-        const key = t.description || t.counterparty || ''
+        const key = t.description || ''
         if (key && mapping[key]) {
           updatedCount++
           return { ...t, category: mapping[key] }

@@ -14,7 +14,7 @@ export function saveTransactions(transactions) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions))
   } catch (e) {
     console.error('保存数据失败:', e)
-    throw new Error('数据保存失败')
+    throw new Error('数据保存失败', { cause: e })
   }
 }
 
