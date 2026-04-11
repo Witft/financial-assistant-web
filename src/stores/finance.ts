@@ -2,9 +2,10 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getTransactions, clearTransactions, getCategoryCache, updateCategoryCache } from '@/utils/storage'
 import { fetchAiCategories } from '@/utils/api'
+import type { Transaction } from '@/types/finance'
 
 export const useFinanceStore = defineStore('finance', () => {
-  const transactions = ref(getTransactions() || [])
+  const transactions = ref<Transaction[]>(getTransactions() || [])
   const selectedMonth = ref('')
 
   // 筛选后的交易
@@ -32,7 +33,7 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // 按分类统计支出（含百分比，用于饼图和列表）
   const filteredExpensesByCategory = computed(() => {
-    const map = {}
+    const map: Record<string, number> = {}
     filteredTransactions.value
       .filter(t => t.amount < 0)
       .forEach(t => {
@@ -113,22 +114,22 @@ export const useFinanceStore = defineStore('finance', () => {
    */
   async function enhanceCategories() {
     // 1. 找出被标记为"其他"的交易
-    const uncategorized = transactions.value.filter(t => 
+    const uncategorized = transactions.value.filter(t =>
       t.category === '其他' && t.type === 'expense'
     )
-    
+
     if (uncategorized.length === 0) {
       console.log('✅ 没有需要分类的"其他"交易')
       return false
     }
-    
+
     console.log(`🔍 发现 ${uncategorized.length} 条"其他"交易，尝试分类...`)
-    
+
     // 2. 从缓存中查找（Layer 3）
     const cache = getCategoryCache()
-    const mapping = {}
-    const toAiList = []
-    
+    const mapping: Record<string, string> = {}
+    const toAiList: string[] = []
+
     for (const t of uncategorized) {
       // 优先用 description，其次用 counterparty
       const key = t.description || t.counterparty || ''
@@ -138,19 +139,19 @@ export const useFinanceStore = defineStore('finance', () => {
         toAiList.push(key) // 加入 AI 待处理列表
       }
     }
-    
+
     // 3. 如果有待处理的，调用 AI（Layer 2）
     if (toAiList.length > 0) {
       try {
         // 去重
         const uniqueList = [...new Set(toAiList)]
         console.log(`🤖 调用 AI 分类 ${uniqueList.length} 个商户...`)
-        
+
         const aiResult = await fetchAiCategories(uniqueList)
-        
+
         // 合并结果
         Object.assign(mapping, aiResult)
-        
+
         // 更新缓存
         if (Object.keys(aiResult).length > 0) {
           updateCategoryCache(aiResult)
@@ -161,7 +162,7 @@ export const useFinanceStore = defineStore('finance', () => {
         // AI 失败不影响主流程，只是这批交易仍是"其他"
       }
     }
-    
+
     // 4. 应用分类结果（更新 transactions）
     let updatedCount = 0
     transactions.value = transactions.value.map(t => {
@@ -174,14 +175,14 @@ export const useFinanceStore = defineStore('finance', () => {
       }
       return t
     })
-    
+
     // 5. 保存更新后的数据
     if (updatedCount > 0) {
       const { saveTransactions } = await import('@/utils/storage')
       saveTransactions(transactions.value)
       console.log(`✅ 成功分类 ${updatedCount} 条交易`)
     }
-    
+
     return toAiList.length > 0
   }
 
