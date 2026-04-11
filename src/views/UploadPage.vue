@@ -112,16 +112,18 @@ async function processFile(file) {
     }
 
     saveTransactions(transactions)
-    
+
     // 触发 AI 分类增强（三层分类：关键词 + 缓存 + AI）
     const financeStore = useFinanceStore()
+    financeStore.refresh()
+
     financeStore.enhanceCategories().then((calledAi) => {
       if (calledAi) {
         status.value = { type: 'success', message: `成功解析 ${transactions.length} 条记录，正在智能分类...` }
       } else {
         status.value = { type: 'success', message: `成功解析 ${transactions.length} 条记录！` }
       }
-      
+
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
         router.push('/dashboard')

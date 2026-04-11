@@ -111,7 +111,7 @@ function parseWechatRow(values, columnMap) {
     }
 
     // 解析金额（微信金额全是负号）
-    let amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')))
+    let amount = Math.abs(parseFloat(amountStr.replace(/[^0-9.]/g, '')))
 
     // 判断类型：优先信任"收/支"列，其次根据交易类型判断
     let transactionType = 'expense'
