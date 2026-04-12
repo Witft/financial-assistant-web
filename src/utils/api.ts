@@ -73,3 +73,62 @@ export async function fetchAiCategories(descriptions) {
     throw error
   }
 }
+
+/**
+ * 上传并解析账单文件
+ * @param {File} file - CSV 文件
+ * @returns {Promise<Array>} - 解析后的交易数据
+ */
+export async function fetchParsedTransactions(file: File) {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_BASE_URL}/parse`, {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`文件解析失败: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    const data = await response.json()
+
+    if (data.success && Array.isArray(data.transactions)) {
+      // 分类名称映射（后端英文 → 前端中文）
+      const CATEGORY_MAPPING: Record<string, string> = {
+        'family_support': '转账',
+        'investment': '投资理财',
+        'dining': '餐饮',
+        'transportation': '交通',
+        'fitness_health': '健身健康',
+        'housing': '住房',
+        'personal_care': '个人护理',
+        'education': '教育',
+        'healthcare': '医疗',
+        'shopping': '购物',
+        'entertainment': '娱乐',
+        'other': '其他'
+      }
+      
+      // 转换为前端期望的格式
+      return data.transactions.map((tx: any) => ({
+        id: tx.id,
+        date: tx.date,
+        amount: tx.amount,
+        category: CATEGORY_MAPPING[tx.category] || tx.category,
+        description: tx.description,
+        source: tx.source,
+        type: tx.type
+      }))
+    } else {
+      throw new Error(data.message || "解析返回格式错误")
+    }
+
+  } catch (error) {
+    console.error("文件解析 API 调用失败:", error)
+    throw error
+  }
+}

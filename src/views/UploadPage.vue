@@ -50,9 +50,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as XLSX from 'xlsx'
-import { parseTransactions } from '@/utils/parsers'
 import { saveTransactions, getTransactions } from '@/utils/storage'
 import { useFinanceStore } from '@/stores/finance'
+import { fetchParsedTransactions } from '@/utils/api'
 
 const router = useRouter()
 const fileInput = ref(null)
@@ -97,19 +97,21 @@ function handleFileSelect(event) {
 
 // 处理文件
 async function processFile(file) {
-  status.value = { type: 'loading', message: '正在解析文件...' }
+  status.value = { type: 'loading', message: '正在上传并解析文件...' }
 
   try {
-    let transactions
+    let csvFile
 
     if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-      // Excel 文件
-      transactions = await parseExcelFile(file)
+      // Excel 文件需要先转换为 CSV
+      csvFile = await convertExcelToCsvFile(file)
     } else {
-      // CSV 文件
-      const text = await readFileAsText(file)
-      transactions = parseTransactions(text, file.name)
+      // CSV 文件直接使用
+      csvFile = file
     }
+
+    // 调用后端 API 解析
+    const transactions = await fetchParsedTransactions(csvFile)
 
     saveTransactions(transactions)
 
@@ -131,12 +133,12 @@ async function processFile(file) {
     })
   } catch (error) {
     console.error('解析错误:', error)
-    status.value = { type: 'error', message: error.message }
+    status.value = { type: 'error', message: error.message || '文件解析失败' }
   }
 }
 
-// 解析 Excel 文件
-async function parseExcelFile(file) {
+// 将 Excel 文件转换为 CSV 文件对象
+async function convertExcelToCsvFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
@@ -149,21 +151,18 @@ async function parseExcelFile(file) {
         const firstSheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[firstSheetName]
 
-        // 转换为 JSON 数组（包含表头）
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-
-        if (jsonData.length < 2) {
-          reject(new Error('文件内容为空或格式不正确'))
-          return
-        }
-
-        // 转换为 CSV 格式字符串，交给 parseTransactions 处理
-        const csvText = XLSX.utils.sheet_to_csv(worksheet)
-        const transactions = parseTransactions(csvText, file.name)
-
-        resolve(transactions)
+        // 转换为 CSV 字符串
+        const csvString = XLSX.utils.sheet_to_csv(worksheet)
+        
+        // 创建新的 CSV 文件对象
+        const csvBlob = new Blob([csvString], { type: 'text/csv' })
+        const csvFile = new File([csvBlob], file.name.replace(/\.(xlsx|xls)$/i, '.csv'), {
+          type: 'text/csv'
+        })
+        
+        resolve(csvFile)
       } catch (err) {
-        reject(new Error('Excel 文件解析失败: ' + err.message))
+        reject(new Error('Excel 文件转换失败: ' + err.message))
       }
     }
 
