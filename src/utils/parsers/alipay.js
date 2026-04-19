@@ -115,10 +115,12 @@ function parseAlipayRow(values, columnMap) {
 
     // 判断类型：收入/支出/转账
     let transactionType = 'transfer'
-    if (type === '收入') {
+    if (type === '????') {
+      transactionType = 'transfer'
+    } else if (type === '??') {
       transactionType = 'income'
       amount = Math.abs(amount)
-    } else if (type === '支出') {
+    } else if (type === '??') {
       transactionType = 'expense'
     } else if (tradeType.includes('转账') || type === '转账') {
       transactionType = 'transfer'

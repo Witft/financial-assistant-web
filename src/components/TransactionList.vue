@@ -4,11 +4,11 @@
       v-for="t in transactions"
       :key="t.id"
       class="transaction-item"
-      :class="{ income: t.type === 'income', expense: t.type === 'expense' }"
+      :class="{ income: t.type === 'income', expense: t.type === 'expense', transfer: t.type === 'transfer' }"
     >
       <span class="t-date">{{ t.date }}</span>
       <span class="t-desc">{{ t.description }}</span>
-      <span class="t-amount">{{ t.type === 'income' ? '+' : '' }}¥{{ Math.abs(t.amount) }}</span>
+      <span class="t-amount">{{ t.type === 'income' ? '+' : t.type === 'transfer' ? 'T ' : '' }}¥{{ Math.abs(t.amount) }}</span>
     </div>
   </div>
 </template>
@@ -42,6 +42,7 @@ defineProps<{
 
 .transaction-item.income .t-amount { color: #52c41a; }
 .transaction-item.expense .t-amount { color: #ff4d4f; }
+.transaction-item.transfer .t-amount { color: #fa8c16; }
 
 .t-date { color: #999; font-size: 0.9rem; }
 .t-desc { color: #333; }
