@@ -65,7 +65,7 @@ const router = useRouter()
 const financeStore = useFinanceStore()
 
 const pendingReviews = computed(() => financeStore.pendingReviews)
-const categoryOptions = ['餐饮', '交通', '购物', '学习', '娱乐', '通讯', '住房', '医疗', '人情', '转账', '收入', '其他']
+const categoryOptions = ['餐饮', '交通', '购物', '娱乐', '通讯', '住房', '医疗', '转账', '收入', '健身健康', '个人护理', '教育', '投资理财', '其他']
 const sourceLabelMap = {
   wechat: '微信',
   alipay: '支付宝',
