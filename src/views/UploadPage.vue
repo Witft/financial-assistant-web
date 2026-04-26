@@ -33,9 +33,7 @@
 
       <div v-if="hasExistingData" class="existing-data">
         <p>已有数据，是否查看 Dashboard？</p>
-        <button @click="goToDashboard" class="btn-secondary">
-          查看 Dashboard →
-        </button>
+        <button @click="goToDashboard" class="btn-secondary">查看 Dashboard →</button>
       </div>
 
       <!-- 解析状态提示 -->
@@ -121,14 +119,21 @@ async function processFile(file) {
 
     financeStore.enhanceCategories().then((calledAi) => {
       if (calledAi) {
-        status.value = { type: 'success', message: `成功解析 ${transactions.length} 条记录，正在智能分类...` }
+        status.value = {
+          type: 'success',
+          message: `成功解析 ${transactions.length} 条记录，正在智能分类...`,
+        }
       } else {
         status.value = { type: 'success', message: `成功解析 ${transactions.length} 条记录！` }
       }
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
-        router.push('/dashboard')
+        if (financeStore.pendingReviews.length > 0) {
+          router.push('/review') // 如果有“其他”或者需要审核的，去审核页
+        } else {
+          router.push('/dashboard') // 如果都很干净，直接去仪表盘
+        }
       }, 1500)
     })
   } catch (error) {
@@ -153,13 +158,13 @@ async function convertExcelToCsvFile(file) {
 
         // 转换为 CSV 字符串
         const csvString = XLSX.utils.sheet_to_csv(worksheet)
-        
+
         // 创建新的 CSV 文件对象
         const csvBlob = new Blob([csvString], { type: 'text/csv' })
         const csvFile = new File([csvBlob], file.name.replace(/\.(xlsx|xls)$/i, '.csv'), {
-          type: 'text/csv'
+          type: 'text/csv',
         })
-        
+
         resolve(csvFile)
       } catch (err) {
         reject(new Error('Excel 文件转换失败: ' + err.message))

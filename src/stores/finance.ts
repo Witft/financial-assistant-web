@@ -1,12 +1,16 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { getTransactions, clearTransactions, getCategoryCache, updateCategoryCache } from '@/utils/storage'
+import { getTransactions, clearTransactions, getCategoryCache, updateCategoryCache, saveTransactions } from '@/utils/storage'
 import { fetchAiCategories } from '@/utils/api'
 import type { Transaction } from '@/types/finance'
 
 export const useFinanceStore = defineStore('finance', () => {
   const transactions = ref<Transaction[]>(getTransactions() || [])
   const selectedMonth = ref('')
+
+  const pendingReviews = computed(() => {
+    return transactions.value.filter(t => t.category === 'other' || t.category === '其他')
+  })
 
   // 筛选后的交易
   const filteredTransactions = computed(() => {
@@ -104,6 +108,18 @@ export const useFinanceStore = defineStore('finance', () => {
     transactions.value = []
   }
 
+  function updateTransactionCategory(id: string, category: string) {
+    const transaction = transactions.value.find(t => t.id === id)
+    if (!transaction) return
+
+    transaction.category = category
+    saveTransactions(transactions.value)
+
+    if (transaction.description && category !== '其他' && category !== 'other') {
+      updateCategoryCache({ [transaction.description]: category })
+    }
+  }
+
   // ==========================================
   // 三层分类增强（Layer 1 + 2 + 3）
   // ==========================================
@@ -178,7 +194,6 @@ export const useFinanceStore = defineStore('finance', () => {
 
     // 5. 保存更新后的数据
     if (updatedCount > 0) {
-      const { saveTransactions } = await import('@/utils/storage')
       saveTransactions(transactions.value)
       console.log(`✅ 成功分类 ${updatedCount} 条交易`)
     }
@@ -189,6 +204,7 @@ export const useFinanceStore = defineStore('finance', () => {
   return {
     transactions,
     selectedMonth,
+    pendingReviews,
     filteredTransactions,
     totalIncome,
     totalExpense,
@@ -197,6 +213,7 @@ export const useFinanceStore = defineStore('finance', () => {
     aiPromptData,
     refresh,
     clear,
+    updateTransactionCategory,
     enhanceCategories
   }
 })

@@ -1,15 +1,18 @@
+import type { Transaction } from '@/types/finance'
+
 /**
  * localStorage 存储工具
  */
 
 const STORAGE_KEY = 'financial_assistant_transactions'
-const CATEGORY_CACHE_KEY = 'financial_assistant_category_cache' // AI 分类缓存
+const CATEGORY_CACHE_KEY = 'financial_assistant_category_cache'
+
+export type CategoryCache = Record<string, string>
 
 /**
  * 保存交易数据
- * @param {Array} transactions - 交易数据数组
  */
-export function saveTransactions(transactions) {
+export function saveTransactions(transactions: Transaction[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions))
   } catch (e) {
@@ -20,12 +23,11 @@ export function saveTransactions(transactions) {
 
 /**
  * 获取交易数据
- * @returns {Array} 交易数据数组
  */
-export function getTransactions() {
+export function getTransactions(): Transaction[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : []
+    return data ? (JSON.parse(data) as Transaction[]) : []
   } catch (e) {
     console.error('读取数据失败:', e)
     return []
@@ -35,29 +37,25 @@ export function getTransactions() {
 /**
  * 清除交易数据
  */
-export function clearTransactions() {
+export function clearTransactions(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
 
 /**
  * 获取指定月份的数据
- * @param {string} month - 月份（YYYY-MM）
- * @returns {Array} 交易数据
  */
-export function getTransactionsByMonth(month) {
+export function getTransactionsByMonth(month: string): Transaction[] {
   const all = getTransactions()
   return all.filter(t => t.date.startsWith(month))
 }
 
 /**
- * 获取最新数据（按日期排序）
- * @param {number} limit - 返回条数
- * @returns {Array}
+ * 获取最新数据，按日期排序
  */
-export function getLatestTransactions(limit = 10) {
+export function getLatestTransactions(limit = 10): Transaction[] {
   const all = getTransactions()
   return all
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, limit)
 }
 
@@ -67,12 +65,17 @@ export function getLatestTransactions(limit = 10) {
 
 /**
  * 获取分类缓存
- * @returns {Object} { "商户描述": "分类", ... }
+ *
+ * 结构示例：
+ * {
+ *   "星巴克": "餐饮",
+ *   "滴滴出行": "交通"
+ * }
  */
-export function getCategoryCache() {
+export function getCategoryCache(): CategoryCache {
   try {
     const data = localStorage.getItem(CATEGORY_CACHE_KEY)
-    return data ? JSON.parse(data) : {}
+    return data ? (JSON.parse(data) as CategoryCache) : {}
   } catch (e) {
     console.error('读取分类缓存失败:', e)
     return {}
@@ -81,9 +84,8 @@ export function getCategoryCache() {
 
 /**
  * 保存分类缓存
- * @param {Object} cache - 分类映射对象
  */
-export function saveCategoryCache(cache) {
+export function saveCategoryCache(cache: CategoryCache): void {
   try {
     localStorage.setItem(CATEGORY_CACHE_KEY, JSON.stringify(cache))
   } catch (e) {
@@ -93,17 +95,19 @@ export function saveCategoryCache(cache) {
 
 /**
  * 批量更新分类缓存
- * @param {Object} mapping - { "商户描述": "分类", ... }
  */
-export function updateCategoryCache(mapping) {
-  const cache = getCategoryCache()
-  const updated = { ...cache, ...mapping }
-  saveCategoryCache(updated)
+export function updateCategoryCache(mapping: CategoryCache): void {
+  const existingCategoryByDescription = getCategoryCache()
+  const nextCategoryByDescription: CategoryCache = {
+    ...existingCategoryByDescription,
+    ...mapping,
+  }
+  saveCategoryCache(nextCategoryByDescription)
 }
 
 /**
  * 清除分类缓存
  */
-export function clearCategoryCache() {
+export function clearCategoryCache(): void {
   localStorage.removeItem(CATEGORY_CACHE_KEY)
 }
