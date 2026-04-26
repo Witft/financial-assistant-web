@@ -176,31 +176,6 @@ async function convertExcelToCsvFile(file) {
   })
 }
 
-// 读取文件内容（自动检测编码）
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = (e) => {
-      const buffer = e.target.result
-
-      // 尝试用 UTF-8 解码，失败则用 GBK
-      try {
-        const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
-        console.log('UTF-8 解码成功')
-        resolve(text)
-      } catch {
-        console.log('UTF-8 解码失败，使用 GBK 解码')
-        const text = new TextDecoder('gbk').decode(buffer)
-        resolve(text)
-      }
-    }
-
-    reader.onerror = () => reject(new Error('文件读取失败'))
-    reader.readAsArrayBuffer(file)
-  })
-}
-
 function goToDashboard() {
   router.push('/dashboard')
 }

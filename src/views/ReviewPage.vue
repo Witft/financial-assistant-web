@@ -25,7 +25,7 @@
           <tr v-for="transaction in pendingReviews" :key="transaction.id">
             <td>{{ transaction.date }}</td>
             <td class="description">{{ transaction.description || '-' }}</td>
-            <td :class="['amount', transaction.amount < 0 ? 'expense' : 'income']">
+            <td :class="['amount', transaction.type]">
               {{ formatAmount(transaction.amount) }}
             </td>
             <td>{{ sourceLabelMap[transaction.source] || transaction.source }}</td>
@@ -65,7 +65,7 @@ const router = useRouter()
 const financeStore = useFinanceStore()
 
 const pendingReviews = computed(() => financeStore.pendingReviews)
-const categoryOptions = ['餐饮', '交通', '购物', '娱乐', '通讯', '住房', '医疗', '人情', '转账', '收入', '其他']
+const categoryOptions = ['餐饮', '交通', '购物', '学习', '娱乐', '通讯', '住房', '医疗', '人情', '转账', '收入', '其他']
 const sourceLabelMap = {
   wechat: '微信',
   alipay: '支付宝',
@@ -179,6 +179,10 @@ function goToDashboard() {
 
 .amount.income {
   color: #16a34a;
+}
+
+.amount.transfer {
+  color: #fa8c16;
 }
 
 .category-select {
